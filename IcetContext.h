@@ -5,6 +5,7 @@
 #include <IceTMPI.h>
 #include <mpi.h>
 #include <vector>
+#include <unordered_map>
 
 class IcetContext {
 public:
@@ -12,23 +13,18 @@ public:
     ~IcetContext();
 
     void setupICET(int windowWidth, int windowHeight);
-    void setCentroids(const std::vector<std::vector<float>> &positions);
+    void setProcessorCentroid(int processorID, const std::vector<float>& position);
     void compositeFrame(
             void *subImage,
             const float *camPos,
             int windowWidth,
             int windowHeight,
-            // anything else needed for compositing
-            // e.g., a pointer back to JNIEnv if you want to do callbacks in here
-            // or simply return a pointer to the composited buffer
-            IceTCommunicator external_mpi_comm // for demonstration
     );
 
 private:
     IceTCommunicator  m_comm;
     IceTContext       m_context;
-    std::vector<std::vector<float>> m_procPositions;
-    // Other needed members (caches, buffers, etc.)
+    std::unordered_map<int, std::vector<float>> m_procPositions;
 };
 
 #endif //ICET_CONTEXT_HPP

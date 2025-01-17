@@ -1,14 +1,16 @@
 #include "IcetContext.h"
 #include <cmath>
 #include <algorithm>
-#include <iostream>  // For debug prints, if desired
+#include <iostream>
 
-// Replace this with however you actually get your MPI_Comm
-extern "C" MPI_Comm getMPICommunicator();
+// TODO: generalize to use external MPI communicator
+MPI_Comm getMPICommunicator() {
+    return MPI_COMM_WORLD;
+}
 
 IcetContext::IcetContext()
         : m_comm(ICET_COMM_NULL)
-        , m_context(ICET_INVALID_CONTEXT)
+        , m_context(nullptr)
 {
     // Constructor logic if needed
 }
@@ -41,21 +43,19 @@ void IcetContext::setupICET(int windowWidth, int windowHeight)
     icetAddTile(0, 0, windowWidth, windowHeight, 0);
 }
 
-void IcetContext::setCentroids(const std::vector<std::vector<float>> &positions)
+void IcetContext::setProcessorCentroid(int processorID, const std::vector<float>& position)
 {
-    // Just copy them into our member
-    m_procPositions = positions;
+    m_procPositions[processorID] = position;
 }
 
 void IcetContext::compositeFrame(
         void *subImage,
         const float *camPos,
         int windowWidth,
-        int windowHeight,
-        IceTCommunicator external_mpi_comm)
+        int windowHeight)
 {
     // Make sure we have a valid context
-    if (m_context == ICET_INVALID_CONTEXT) {
+    if (m_context == nullptr) {
         std::cerr << "Error: Called compositeFrame without a valid IceT context.\n";
         return;
     }
@@ -107,7 +107,6 @@ void IcetContext::compositeFrame(
             background_color
     );
 
-    // 'image' is the composited result. You can retrieve the color buffer via:
-    //   const IceTUByte *color_data = icetImageGetColorub(image);
-    // Then do whatever is needed with that data (e.g., pass it to Java).
+    const IceTUByte *color_data = icetImageGetColorub(image);
+
 }
