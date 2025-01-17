@@ -2,6 +2,7 @@
 #include "IcetContext.h"
 #include <vector>
 #include <iostream>
+#include <cstring>
 
 // ------------------------------------------------------------------
 // 1) Create / Destroy
@@ -66,11 +67,19 @@ Java_com_example_IcetJNI_setProcessorCentroid(JNIEnv* env, jclass, jlong handle,
     context->setProcessorCentroid(processorID, positionVec);
 }
 
-// ------------------------------------------------------------------
-// 4) compositeFrame
-// ------------------------------------------------------------------
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_IcetJNI_compositeFrame(JNIEnv* env, jclass, jlong handle,
+/**
+ * Returns a ByteBuffer with the composited RGBA8 data on rank 0,
+ * or null on non-zero ranks (assuming the chosen IceT strategy only yields the final image on rank 0).
+ *
+ * Kotlin signature might be:
+ *     external fun compositeFrame(handle: Long,
+ *                                 subImage: ByteBuffer,
+ *                                 camPos: FloatArray,
+ *                                 width: Int,
+ *                                 height: Int): ByteBuffer?
+ */
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_example_MyIcetJNI_compositeFrame(JNIEnv* env, jclass, jlong handle,
                                         jobject subImageBuffer,
                                         jfloatArray camPosArray,
                                         jint width, jint height)
@@ -78,29 +87,41 @@ Java_com_example_IcetJNI_compositeFrame(JNIEnv* env, jclass, jlong handle,
     IcetContext* context = reinterpret_cast<IcetContext*>(handle);
     if (!context) {
         std::cerr << "compositeFrame called with null context!" << std::endl;
-        return;
+        return nullptr;
     }
 
 // Get pointer to subImage data
     void* subImage = env->GetDirectBufferAddress(subImageBuffer);
     if (!subImage) {
         std::cerr << "subImage buffer is null" << std::endl;
-        return;
+        return nullptr;
     }
 
 // Get pointer to camera position array
     jfloat* camPos = env->GetFloatArrayElements(camPosArray, nullptr);
     if (!camPos) {
         std::cerr << "camPos is null" << std::endl;
-        return;
+        return nullptr;
     }
 
-    context->compositeFrame(subImage, camPos, width, height);
+    auto result = context->compositeFrame(subImage, camPos, width, height);
 
-// Release camera position array
+    auto colorPtr = result.first;
+    auto dataSize = result.second;
+
     env->ReleaseFloatArrayElements(camPosArray, camPos, 0);
 
-// If you want to return or display the composited result to Java,
-// you might do so here (e.g., create a DirectByteBuffer from the
-// final color array, then call a Java method via JNI).
+    if (!colorPtr || dataSize == 0) {
+        // Possibly non-root rank or an error
+        return nullptr;
+    }
+
+    // Wrap the persistent buffer in a direct ByteBuffer.
+    // It's valid at least until the next composite call or context destruction.
+    jobject resultBuffer = env->NewDirectByteBuffer(
+            const_cast<unsigned char*>(colorPtr),
+            static_cast<jlong>(dataSize)
+    );
+    return resultBuffer;
+
 }

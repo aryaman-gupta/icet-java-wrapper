@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <cstring>
 
 // TODO: generalize to use external MPI communicator
 MPI_Comm getMPICommunicator() {
@@ -48,7 +49,7 @@ void IcetContext::setProcessorCentroid(int processorID, const std::vector<float>
     m_procPositions[processorID] = position;
 }
 
-void IcetContext::compositeFrame(
+std::pair<const unsigned char*, size_t> IcetContext::compositeFrame(
         void *subImage,
         const float *camPos,
         int windowWidth,
@@ -57,7 +58,7 @@ void IcetContext::compositeFrame(
     // Make sure we have a valid context
     if (m_context == nullptr) {
         std::cerr << "Error: Called compositeFrame without a valid IceT context.\n";
-        return;
+        return std::make_pair(nullptr, 0);
     }
 
     // Switch to our context
@@ -107,6 +108,23 @@ void IcetContext::compositeFrame(
             background_color
     );
 
-    const IceTUByte *color_data = icetImageGetColorub(image);
+    if (commRank == 0) {
+        const IceTUByte* colorData = icetImageGetColorub(image);
+        if (!colorData) {
+            // This could be null if something's off with the image or strategy
+            return {nullptr, 0};
+        }
+        size_t dataSize = static_cast<size_t>(windowWidth) * windowHeight * 4;
+
+        if (m_colorBuffer.size() < dataSize) {
+            m_colorBuffer.resize(dataSize);
+        }
+
+        std::memcpy(m_colorBuffer.data(), colorData, dataSize);
+
+        return {m_colorBuffer.data(), dataSize};
+    } else {
+        return {nullptr, 0};
+    }
 
 }
