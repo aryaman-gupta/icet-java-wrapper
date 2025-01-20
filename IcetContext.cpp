@@ -17,6 +17,9 @@ IcetContext::IcetContext()
     int mpiInitialized;
     MPI_Initialized(&mpiInitialized);
     if (!mpiInitialized) {
+
+        std::cout << "MPI not initialized, initializing now" << std::endl;
+
         MPI_Init(nullptr, nullptr);
         mpiSelfInitialized = true;
     }
