@@ -79,7 +79,7 @@ Java_graphics_scenery_natives_IceTWrapper_setProcessorCentroid(JNIEnv* env, jcla
  *                                 height: Int): ByteBuffer?
  */
 extern "C" JNIEXPORT jobject JNICALL
-Java_com_example_MyIcetJNI_compositeFrame(JNIEnv* env, jclass, jlong handle,
+Java_graphics_scenery_natives_IceTWrapper_compositeFrame(JNIEnv* env, jclass, jlong handle,
                                         jobject subImageBuffer,
                                         jfloatArray camPosArray,
                                         jint width, jint height)
