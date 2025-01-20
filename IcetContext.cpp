@@ -13,13 +13,20 @@ IcetContext::IcetContext()
         : m_comm(ICET_COMM_NULL)
         , m_context(nullptr)
 {
-    // Constructor logic if needed
+    // Initialize MPI if it is not already initialized
+    int mpiInitialized;
+    MPI_Initialized(&mpiInitialized);
+    if (!mpiInitialized) {
+        MPI_Init(nullptr, nullptr);
+        mpiSelfInitialized = true;
+    }
 }
 
 IcetContext::~IcetContext()
 {
-    // If you need to destroy the IceT context or communicator
-    // For example: icetDestroyContext(m_context);
+    if (mpiSelfInitialized) {
+        MPI_Finalize();
+    }
 }
 
 void IcetContext::setupICET(int windowWidth, int windowHeight)

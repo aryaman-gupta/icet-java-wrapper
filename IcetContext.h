@@ -34,6 +34,7 @@ private:
 
     // A reusable buffer to store the final composited image on rank 0:
     std::vector<unsigned char> m_colorBuffer;
+    bool mpiSelfInitialized = false;
 };
 
 #endif //ICET_CONTEXT_HPP
