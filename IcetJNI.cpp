@@ -8,7 +8,7 @@
 // 1) Create / Destroy
 // ------------------------------------------------------------------
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_example_IcetJNI_createNativeContext(JNIEnv* env, jclass clazz)
+Java_graphics_scenery_natives_IceTWrapper_createNativeContext(JNIEnv* env, jclass clazz)
 {
     // Allocate a new context
     IcetContext* context = new IcetContext();
@@ -17,7 +17,7 @@ Java_com_example_IcetJNI_createNativeContext(JNIEnv* env, jclass clazz)
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_IcetJNI_destroyNativeContext(JNIEnv* env, jclass clazz, jlong handle)
+Java_graphics_scenery_natives_IceTWrapper_destroyNativeContext(JNIEnv* env, jclass clazz, jlong handle)
 {
     IcetContext* context = reinterpret_cast<IcetContext*>(handle);
     if (context) {
@@ -30,7 +30,7 @@ Java_com_example_IcetJNI_destroyNativeContext(JNIEnv* env, jclass clazz, jlong h
 // 2) setupICET
 // ------------------------------------------------------------------
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_IcetJNI_setupICET(JNIEnv* env, jclass, jlong handle, jint width, jint height)
+Java_graphics_scenery_natives_IceTWrapper_setupICET(JNIEnv* env, jclass, jlong handle, jint width, jint height)
 {
     IcetContext* context = reinterpret_cast<IcetContext*>(handle);
     if (!context) {
@@ -45,7 +45,7 @@ Java_com_example_IcetJNI_setupICET(JNIEnv* env, jclass, jlong handle, jint width
 //     positions: 2D float array from Java (float[][] in Kotlin/Java)
 // ------------------------------------------------------------------
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_IcetJNI_setProcessorCentroid(JNIEnv* env, jclass, jlong handle, jint processorID, jfloatArray position)
+Java_graphics_scenery_natives_IceTWrapper_setProcessorCentroid(JNIEnv* env, jclass, jlong handle, jint processorID, jfloatArray position)
 {
     IcetContext* context = reinterpret_cast<IcetContext*>(handle);
     if (!context) {
