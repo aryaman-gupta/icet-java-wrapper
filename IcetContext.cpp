@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include <numeric>
 
 // TODO: generalize to use external MPI communicator
 MPI_Comm getMPICommunicator() {
@@ -68,21 +69,34 @@ auto IcetContext::compositeFrame(
     return composite(windowWidth, windowHeight, [&]([[maybe_unused]] int commRank, int commSize) {
         icetEnable(ICET_ORDERED_COMPOSITE);
 
-        // Build distances from camera for each process
-        std::vector<float> distances(commSize);
-        std::vector<int>   procs(commSize);
-        for (int i = 0; i < commSize; i++) {
-            float dx = m_procPositions[i][0] - camPos[0];
-            float dy = m_procPositions[i][1] - camPos[1];
-            float dz = m_procPositions[i][2] - camPos[2];
-            distances[i] = std::sqrt(dx*dx + dy*dy + dz*dz);
-            procs[i] = i;
-        }
+        // Set process order.
+        std::vector<int> procs(commSize);
 
-        // Sort procs by ascending distance
-        std::sort(procs.begin(), procs.end(), [&](int a, int b){
-            return distances[a] < distances[b];
-        });
+        if (m_procPositions.size() >= commSize) {
+            // Build distances from camera for each process
+            std::vector<float> distances(commSize);
+            for (int i = 0; i < commSize; i++) {
+                float dx = m_procPositions[i][0] - camPos[0];
+                float dy = m_procPositions[i][1] - camPos[1];
+                float dz = m_procPositions[i][2] - camPos[2];
+                distances[i] = std::sqrt(dx*dx + dy*dy + dz*dz);
+                procs[i] = i;
+            }
+
+            // Sort procs by ascending distance
+            std::sort(procs.begin(), procs.end(), [&](int a, int b){
+                return distances[a] < distances[b];
+            });
+        } else {
+            // If centroids are unknown, simply order processes by rank.
+            // This will likely produce wrong results and should only be used to demonstrate the
+            // inadequacy of flat images for non-convex domains.
+            std::iota(procs.begin(), procs.end(), 0);
+            std::clog << "\x1b[1;33mwarning:\x1b[m There are " << commSize
+                      << " processes, but only " << m_procPositions.size() << " centroids given. "
+                         "Compositing order will be determined by rank, likely producing incorrect "
+                         "output.\n";
+        }
 
         icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
         icetCompositeOrder(procs.data());
